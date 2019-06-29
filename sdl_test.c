@@ -16,9 +16,20 @@ int main() {
     SDL_RenderClear(renderer);
     SDL_RenderCopy(renderer, tex, NULL, NULL);
     //SDL_RenderDrawPoint(renderer, 20, 20);
+    SDL_Rect test;
+    test.h = 100;
+    test.w = 100;
+    test.x = 20;
+    test.y = 20;
+    // SDL_RenderDrawRect(renderer, &test);
+    SDL_RenderFillRect(renderer, &test);
     SDL_RenderPresent(renderer);
     SDL_Delay(2000);
-
+    const Uint8 *keystates = SDL_GetKeyboardState(NULL);
+    printf("%d\n", keystates[SDL_SCANCODE_Z]);
+    if(keystates[SDL_SCANCODE_Z]) {
+        printf("Test\n");
+    }
     SDL_DestroyTexture(tex);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(win);

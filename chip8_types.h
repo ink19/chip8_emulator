@@ -46,9 +46,11 @@ typedef struct {
 
     //栈
     struct {
-        memory_t data[16];
+        unsigned short data[16];
         int SP;
     } stack;
+
+    unsigned char keys[16];
 } chip8_emulator_t;
 
 /**
