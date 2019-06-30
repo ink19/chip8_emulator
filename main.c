@@ -5,7 +5,7 @@
 chip8_emulator_t emu;
 int main() {
     
-    load_rom(&emu, "./Tank.ch8");
+    load_rom(&emu, "./game.ch8");
     main_loop(&emu);
     emulator_destroy(&emu);
     return 0;

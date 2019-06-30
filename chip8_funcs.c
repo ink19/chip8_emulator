@@ -61,9 +61,9 @@ static int disp_clear(chip8_emulator_t *emu) {
 
 static int return_op(chip8_emulator_t *emu) {
     --(emu->stack.SP);
-    printf("OUT b %d\n", emu->register_data.PC);
+    //printf("OUT b %d\n", emu->register_data.PC);
     emu->register_data.PC = emu->stack.data[(emu->stack.SP)];
-    printf("OUT a %d\n", emu->register_data.PC);
+    //printf("OUT a %d\n", emu->register_data.PC);
     return 0;
 }
 
@@ -90,22 +90,25 @@ static int opcode_2(chip8_emulator_t *emu, unsigned short opcode) {
     opcode &= 0x0fff;
     emu->stack.data[emu->stack.SP] = emu->register_data.PC;
     (emu->stack.SP)++;
-    printf("IN b %d\n", emu->register_data.PC);
+    //printf("IN b %d\n", emu->register_data.PC);
     emu->register_data.PC = opcode;
-    printf("IN a %d\n", emu->register_data.PC);
+    //printf("IN a %d\n", emu->register_data.PC);
     return 0;
 }
 
 static int opcode_3(chip8_emulator_t *emu, unsigned short opcode) {
     if(emu->register_data.V[(opcode & 0x0f00) >> 8] == (opcode & 0x00ff)) {
         emu->register_data.PC += 2;
+        //printf("E %d %d %d\n", (opcode & 0x0f00) >> 8, (opcode & 0x00ff), emu->register_data.PC - 4);
     }
+    //printf("%d %d\n", emu->register_data.V[(opcode & 0x0f00) >> 8], emu->register_data.PC - 4);
     return 0;
 }
 
 static int opcode_4(chip8_emulator_t *emu, unsigned short opcode) {
     if(emu->register_data.V[(opcode & 0x0f00) >> 8] != (opcode & 0x00ff)) {
         emu->register_data.PC += 2;
+        //printf("NE %d %d %d\n", (opcode & 0x0f00) >> 8, (opcode & 0x00ff), emu->register_data.PC - 4);
     }
     return 0;
 }
@@ -142,7 +145,7 @@ static int opcode_8(chip8_emulator_t *emu, unsigned short opcode) {
             emu->register_data.V[(opcode & 0x0f00) >> 8] ^= emu->register_data.V[(opcode & 0x00f0) >> 4];
         break;
         case 0x4:
-            if((int)(emu->register_data.V[(opcode & 0x0f00) >> 8]) + (int)(emu->register_data.V[(opcode & 0x00f0) >> 4]) > 0xff) {
+            if((unsigned int)(emu->register_data.V[(opcode & 0x0f00) >> 8]) + (unsigned int)(emu->register_data.V[(opcode & 0x00f0) >> 4]) > 0xff) {
                 emu->register_data.V[0xf] = 1;
             } else {
                 emu->register_data.V[0xf] = 0;
@@ -207,6 +210,7 @@ static int opcode_D(chip8_emulator_t *emu, unsigned short opcode) {
     unsigned short I = emu->register_data.I;
     unsigned short N = opcode & 0x000f;
     unsigned char x_line = 0;
+    emu->register_data.V[0xf] = 0;
     for (int loop_y = 0; loop_y < N; ++loop_y) {
         x_line = emu->memory[I];
         for (int loop_x = 0; loop_x < 8; ++loop_x) {
@@ -225,14 +229,20 @@ static int opcode_D(chip8_emulator_t *emu, unsigned short opcode) {
 static int opcode_E(chip8_emulator_t *emu, unsigned short opcode) {
     int state = 0;
     //const Uint8 *keystates = SDL_GetKeyboardState(NULL);
-    if(emu->keys[emu->register_data.V[(opcode & 0x0f00) >> 8]] == 1) state = 1;
-    if(opcode & 0x00ff == 0x009e) {
+    
+    if(emu->keys[emu->register_data.V[(opcode & 0x0f00) >> 8]] == 1) {
+        state = 1;
+        //printf("Test\n");
+    }
+    if((opcode & 0x00ff) == 0x009e) {
         if(state == 1) {
             emu->register_data.PC += 2;
+            //printf("E %d \n", emu->register_data.V[(opcode & 0x0f00) >> 8]);
         }
-    } else if(opcode & 0x00ff == 0x00a1) {
+    } else if((opcode & 0x00ff) == 0x00a1) {
         if(state == 0) {
             emu->register_data.PC += 2;
+            //printf("NE %d \n", emu->register_data.V[(opcode & 0x0f00) >> 8]);
         }
     }
     return 0;
@@ -257,6 +267,7 @@ static int opcode_F(chip8_emulator_t *emu, unsigned short opcode) {
             }
         }
         if(getKey == 0) emu->register_data.PC -= 2;
+        //printf("%d\n", emu->register_data.PC);
         break;
     case 0x15:
         emu->timer.delay_timer = emu->register_data.V[registerV];
@@ -336,16 +347,6 @@ extern int main_loop(chip8_emulator_t *emu) {
     SDL_Event event;
     int gameover = 0;
     while(!gameover) {
-        load_opcode(emu, &opcode);
-        exec_opcode(emu, opcode);
-        refresh_timer(emu);
-        draw_view(emu);
-        while(SDL_PollEvent(&event)) {
-            if(event.type == SDL_QUIT) {
-                gameover = 1;
-            } 
-        }
-        //printf("Over\n");
         const Uint8 *keystates = SDL_GetKeyboardState(NULL);
         if(keystates[SDL_SCANCODE_ESCAPE]) {
             break;
@@ -399,6 +400,17 @@ extern int main_loop(chip8_emulator_t *emu) {
         if(keystates[SDL_SCANCODE_D]) {
             emu->keys[15] = 1;
         }
+        load_opcode(emu, &opcode);
+        exec_opcode(emu, opcode);
+        refresh_timer(emu);
+        draw_view(emu);
+        while(SDL_PollEvent(&event)) {
+            if(event.type == SDL_QUIT) {
+                gameover = 1;
+            } 
+        }
+        //printf("Over\n");
+        
         // for(int loop_i = 0; loop_i < 16; ++loop_i) {
         //     printf("%d", emu->keys[loop_i]);
         // }
