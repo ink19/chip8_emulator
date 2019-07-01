@@ -346,7 +346,10 @@ extern int main_loop(chip8_emulator_t *emu) {
     unsigned short opcode;
     SDL_Event event;
     int gameover = 0;
+    clock_t start, final;
+    final = clock();
     while(!gameover) {
+        start = final;
         const Uint8 *keystates = SDL_GetKeyboardState(NULL);
         if(keystates[SDL_SCANCODE_ESCAPE]) {
             break;
@@ -416,7 +419,11 @@ extern int main_loop(chip8_emulator_t *emu) {
         // }
         // printf("\n");
         //printf("%d\n", emu->register_data.PC - 0x200);
-        SDL_Delay(15);
+        final = clock();
+        if((start - final) < CLOCKS_PER_SEC/60) {
+            //printf("%d \n", 1000/60 - (start - final) * 1000 / CLOCKS_PER_SEC);
+            SDL_Delay(1000/60 - (start - final) * 1000 / CLOCKS_PER_SEC);
+        }
     }
     return 0;
 }
